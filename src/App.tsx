@@ -29,7 +29,7 @@ const eventsDB: Event[] = [
 		type: "task",
 		group: "Captura i preparacio de dades",
 		dedicatedTime: 156,
-		order: 0
+		order: 2
 	},
 	{
 		id: "2222",
@@ -47,7 +47,7 @@ const eventsDB: Event[] = [
 		type: "task",
 		group: "mates",
 		dedicatedTime: 256,
-		order: 0
+		order: 1
 	}
 ]
 
@@ -72,6 +72,8 @@ const EVENTS = 'events'
 const TYPES = 'types'
 const GROUPS = 'groups'
 
+type ModifiedEvent = Event & { isNew?: boolean, isModified?: boolean }
+
 function App() {
 	const [events, setEvents] = useState<EventsGroupedByDate>({})
 	const [selectedDate, setSelectedDate] = useState<Day>({
@@ -79,7 +81,7 @@ function App() {
 		date: "2022-10-1",
 		events: []
 	})
-	const [selectedEvent, setSelectedEvent] = useState<Event & { isNew?: boolean, isModified?: boolean }>(emptyEvent)
+	const [selectedEvent, modifySelectedEvent] = useState<ModifiedEvent>(emptyEvent)
 
 	// Load initial events
 	useEffect(() => {
@@ -103,6 +105,30 @@ function App() {
 		}
 	}
 
+	// function setSelectedEvent(event: Event & { isNew?: boolean, isModified?: boolean }) {
+	// 	modifySelectedEvent({
+	// 		...event,
+	// 		order: event.order === -1 ? events[event.date].length + 1 || 1 : event.order
+	// 	})
+	// }
+	function setSelectedEvent(newState: ModifiedEvent | ((prevState: ModifiedEvent) => ModifiedEvent), cell: Day = selectedDate) {
+		if (typeof newState === 'function') {
+			modifySelectedEvent(prev => {
+				console.log('UPDATED')
+				const updatedState = newState(prev)
+				return {
+					...updatedState,
+					order: updatedState.isNew && updatedState.order === selectedEvent.order ? events[cell.date]?.length + 1 || 1 : updatedState.order
+				}
+			})
+		} else {
+			modifySelectedEvent({
+				...newState,
+				order: newState.isNew && newState.order === selectedEvent.order ? events[cell.date]?.length + 1 || 1 : newState.order
+			})
+		}
+	}
+
 	function changeSelectedEvent(name: string, value: unknown) {
 		setSelectedEvent(prev => ({
 			...prev,
@@ -122,12 +148,12 @@ function App() {
 				{generateCalendarCells().map((cell, index) => (
 					<ItemStyled key={index} onClick={(event) => {
 						setSelectedDate(cell)
-						if (event.target === event.currentTarget && !selectedEvent.isNew) {
-							setSelectedEvent(emptyEvent)
+						if (event.target === event.currentTarget) {
+							setSelectedEvent(selectedEvent.isNew ? selectedEvent : emptyEvent, cell)
 						}
 					}}>
 						<div className="header">{cell.day}{cell.date === selectedDate.date ? '*' : ''}</div>
-						{events[cell.date]?.map(event => (
+						{events[cell.date]?.sort((a, b) => a.order - b.order).map(event => (
 							<EventStyled key={event.id}
 							             onClick={() => setSelectedEvent(event.id === selectedEvent.id ? emptyEvent : event)}>
 								<div className="container">
@@ -144,7 +170,10 @@ function App() {
 									setEvents(prevEvents => {
 										const newEvents = ({
 											...prevEvents,
-											[cell.date]: prevEvents[cell.date].filter(ev => ev.id !== event.id)
+											[cell.date]: prevEvents[cell.date]
+												.filter(ev => ev.id !== event.id)
+												.sort((a, b) => a.order - b.order)
+												.map((e, idx) => ({...e, order: idx + 1}))
 										})
 										saveLocally(newEvents)
 										return newEvents
@@ -170,33 +199,41 @@ function App() {
 					       onChange={onChangeInput}/>
 					<input name="dedicatedTime" type="number" placeholder="dedicated time" value={selectedEvent.dedicatedTime}
 					       onChange={onChangeInput}/>
-					<input name="order" type="number" placeholder="order"
-					       value={selectedEvent.order === -1 ? events[selectedDate.date]?.length || 0 : selectedEvent.order}
-					       onChange={onChangeInput}/>
-					<span>{events[selectedDate.date]?.length || '__'} || {selectedEvent.order}</span>
+					<input name="order" type="number" placeholder="order" value={selectedEvent.order}
+					       onChange={onChangeInput}
+					/>
 					{/*	Actions*/}
 					{selectedEvent.isNew ? (
 						<>
 							<button onClick={() => {
 								const newEvent = {
+									id: generateUID(),
 									title: selectedEvent.title,
 									type: selectedEvent.type,
 									group: selectedEvent.group,
 									dedicatedTime: selectedEvent.dedicatedTime,
-									id: generateUID(),
-									// date: `2022-10-${addZeroIfNeeded(selectedDate.day)}`,
+									order: selectedEvent.order,
 									date: selectedDate.date,
 								}
 								setEvents(prevEvents => {
-									console.log({newEvent})
+									const prevEventsAtDate = prevEvents[newEvent.date]
+										.sort((a, b) => a.order - b.order) || []
+
+									const firsts = prevEventsAtDate.slice(0, newEvent.order - 1) // -1 because starts counting at 1
+									const lasts = prevEventsAtDate.slice(newEvent.order - 1).map(e => ({...e, order: e.order + 1}))
+									const newOrderEventsAtDate = firsts.concat(newEvent).concat(lasts).map((e, idx) => ({
+										...e,
+										order: idx + 1
+									})) // Normalize order
+
 									const newEvents = ({
 										...prevEvents,
-										[newEvent.date]: (prevEvents[newEvent.date] || []).concat({...newEvent, order: 999}),
+										[newEvent.date]: newOrderEventsAtDate,
 									})
 									saveLocally(newEvents)
 									return newEvents
 								})
-								setSelectedEvent({...newEvent, order: 999})
+								setSelectedEvent(newEvent)
 							}}>Add event
 							</button>
 						</>
@@ -204,9 +241,20 @@ function App() {
 						<>
 							<button onClick={() => {
 								setEvents(prevEvents => {
+									const prevEventsAtDate = prevEvents[selectedEvent.date]
+										.sort((a, b) => a.order - b.order)
+										.filter(e => e.id !== selectedEvent.id)
+										.map((e, idx) => ({...e, order: idx + 1}))
+									const firsts = prevEventsAtDate.slice(0, selectedEvent.order - 1) // -1 because starts counting at 1
+									const lasts = prevEventsAtDate.slice(selectedEvent.order - 1).map(e => ({...e, order: e.order + 1}))
+									const newOrderEventsAtDate = firsts.concat(selectedEvent).concat(lasts).map((e, idx) => ({
+										...e,
+										order: idx + 1
+									})) // Normalize order
+
 									const newEvents = ({
 										...prevEvents,
-										[selectedEvent.date]: prevEvents[selectedEvent.date].map(ev => ev.id === selectedEvent.id ? selectedEvent : ev)
+										[selectedEvent.date]: newOrderEventsAtDate
 									})
 									saveLocally(newEvents)
 									return newEvents
@@ -280,8 +328,6 @@ const EventStyled = styled.div`
   justify-content: space-between;
   border-radius: .4rem;
   background-color: aquamarine;
-  //border-top: 4px solid aquamarine;
-  //border-bottom: 4px solid aquamarine;
   padding: .2rem .1rem;
   margin-top: .2rem;
   cursor: pointer;
@@ -295,7 +341,7 @@ const EventStyled = styled.div`
     display: flex;
     flex-direction: column;
     font-size: .8rem;
-	  
+
     .info {
       font-size: .6rem;
       margin-right: 0.2rem;
