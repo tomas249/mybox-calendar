@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useRef} from 'react';
+import React, {useState, useEffect, useMemo} from 'react';
 import styled from "styled-components";
 import dayjs from "dayjs";
 
@@ -82,6 +82,14 @@ function App() {
 		events: []
 	})
 	const [selectedEvent, modifySelectedEvent] = useState<ModifiedEvent>(emptyEvent)
+	const dedicatedTimeByGroup = useMemo(() => {
+		return Object.values(events).reduce((total, eventsArr) => {
+			eventsArr.forEach(event => {
+				total[event.group || 'undefined'] = (total[event.group || 'undefined'] || 0) + (event.dedicatedTime || 0)
+			})
+			return total
+		}, {} as { [key: string]: number })
+	}, [events])
 
 	// Load initial events
 	useEffect(() => {
@@ -105,16 +113,9 @@ function App() {
 		}
 	}
 
-	// function setSelectedEvent(event: Event & { isNew?: boolean, isModified?: boolean }) {
-	// 	modifySelectedEvent({
-	// 		...event,
-	// 		order: event.order === -1 ? events[event.date].length + 1 || 1 : event.order
-	// 	})
-	// }
 	function setSelectedEvent(newState: ModifiedEvent | ((prevState: ModifiedEvent) => ModifiedEvent), cell: Day = selectedDate) {
 		if (typeof newState === 'function') {
 			modifySelectedEvent(prev => {
-				console.log('UPDATED')
 				const updatedState = newState(prev)
 				return {
 					...updatedState,
@@ -130,6 +131,9 @@ function App() {
 	}
 
 	function changeSelectedEvent(name: string, value: unknown) {
+		if (['dedicatedTime', 'order'].includes(name) && typeof value === 'string') {
+			value = parseInt(value)
+		}
 		setSelectedEvent(prev => ({
 			...prev,
 			[name]: value,
@@ -159,7 +163,7 @@ function App() {
 								<div className="container">
 									<div style={{display: 'flex'}}>
 										<span className="info">{event.group}</span>
-										<span className="info">{event.dedicatedTime}</span>
+										<span className="info">{formatHours(event.dedicatedTime || 0)}</span>
 										{event.id === selectedEvent.id && <span style={{fontSize: '.8rem'}}>*</span>}
 										<span className="info" style={{marginLeft: 'auto'}}>{event.type}</span>
 									</div>
@@ -197,9 +201,10 @@ function App() {
 					       onChange={onChangeInput}/>
 					<input name="group" type="text" placeholder="group" value={selectedEvent.group}
 					       onChange={onChangeInput}/>
-					<input name="dedicatedTime" type="number" placeholder="dedicated time" value={selectedEvent.dedicatedTime}
+					<input name="dedicatedTime" type="number" placeholder="dedicated time"
+					       value={selectedEvent.dedicatedTime?.toString() || ''}
 					       onChange={onChangeInput}/>
-					<input name="order" type="number" placeholder="order" value={selectedEvent.order}
+					<input name="order" type="number" placeholder="order" value={selectedEvent.order?.toString() || ''}
 					       onChange={onChangeInput}
 					/>
 					{/*	Actions*/}
@@ -286,7 +291,7 @@ function App() {
 						'V de dades'
 					].map((g, index) => (
 						<RounderPill key={index} selected={g === selectedEvent.group}
-						             onClick={() => changeSelectedEvent('group', g)}>{g}</RounderPill>
+						             onClick={() => changeSelectedEvent('group', g)}>{g} ({formatHours(dedicatedTimeByGroup[g] || 0)})</RounderPill>
 					))}
 				</AddEventContainerStyled>
 			</div>
@@ -467,4 +472,13 @@ function fillEmptyCells<T>(days: T[]): T[] {
 
 function generateUID() {
 	return "id" + Math.random().toString(16).slice(2)
+}
+
+function formatHours(minutes: number): string {
+	const m = minutes % 60
+	const h = (minutes - m) / 60
+
+	// if (h === 0) return m.toString() + 'm'
+	// if (m === 0) return h.toString() + 'h'
+	return `${h.toString()}:${addZeroIfNeeded(m)}`
 }
