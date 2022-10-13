@@ -171,8 +171,9 @@ function App() {
 					<input name="dedicatedTime" type="number" placeholder="dedicated time" value={selectedEvent.dedicatedTime}
 					       onChange={onChangeInput}/>
 					<input name="order" type="number" placeholder="order"
-					       value={selectedEvent.order === -1 ? events[selectedDate.day]?.length : selectedEvent.order}
+					       value={selectedEvent.order === -1 ? events[selectedDate.date]?.length || 0 : selectedEvent.order}
 					       onChange={onChangeInput}/>
+					<span>{events[selectedDate.date]?.length || '__'} || {selectedEvent.order}</span>
 					{/*	Actions*/}
 					{selectedEvent.isNew ? (
 						<>
@@ -293,10 +294,11 @@ const EventStyled = styled.div`
     flex: 1;
     display: flex;
     flex-direction: column;
-
+    font-size: .8rem;
+	  
     .info {
-      margin-right: 0.2rem;
       font-size: .6rem;
+      margin-right: 0.2rem;
       border-radius: .4rem;
       background-color: #fda07e;
       padding: .1rem .2rem;
