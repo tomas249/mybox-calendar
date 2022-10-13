@@ -157,9 +157,11 @@ function App() {
 						}
 					}}>
 						<div className="header">{cell.day}{cell.date === selectedDate.date ? '*' : ''}</div>
-						{events[cell.date]?.sort((a, b) => a.order - b.order).map(event => (
+						{events[cell.date]?.sort((a, b) => a.order - b.order).map((event, idx, sortedEvents) => (
 							<EventStyled key={event.id}
-							             onClick={() => setSelectedEvent(event.id === selectedEvent.id ? emptyEvent : event)}>
+							             onClick={() => setSelectedEvent(event.id === selectedEvent.id ? emptyEvent : event)}
+							             style={event.type === 'PAC' && sortedEvents[idx - 1]?.type !== 'PAC' ? {marginTop: 'auto'} : {}}
+							>
 								<div className="container">
 									<div style={{display: 'flex'}}>
 										<span className="info">{event.group}</span>
@@ -316,6 +318,8 @@ const GridContainerStyled = styled.div`
 `
 
 const ItemStyled = styled.div`
+  display: flex;
+  flex-direction: column;
   background-color: #61dafb;
   //border: 1px solid green;
   //border-radius: .4rem;
