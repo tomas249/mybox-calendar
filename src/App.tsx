@@ -317,8 +317,8 @@ const GridContainerStyled = styled.div`
 
 const ItemStyled = styled.div`
   background-color: #61dafb;
-  border: 1px solid green;
-  border-radius: .4rem;
+  //border: 1px solid green;
+  //border-radius: .4rem;
 
   .header {
     padding-top: .2rem;
