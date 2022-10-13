@@ -222,7 +222,7 @@ function App() {
 								}
 								setEvents(prevEvents => {
 									const prevEventsAtDate = prevEvents[newEvent.date]
-										.sort((a, b) => a.order - b.order) || []
+										?.sort((a, b) => a.order - b.order) || []
 
 									const firsts = prevEventsAtDate.slice(0, newEvent.order - 1) // -1 because starts counting at 1
 									const lasts = prevEventsAtDate.slice(newEvent.order - 1).map(e => ({...e, order: e.order + 1}))
