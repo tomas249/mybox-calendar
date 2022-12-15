@@ -478,11 +478,11 @@ function generateUID() {
 	return "id" + Math.random().toString(16).slice(2)
 }
 
-function formatHours(minutes: number): string {
+export function formatHours(minutes: number): string {
 	const m = minutes % 60
 	const h = (minutes - m) / 60
 
 	// if (h === 0) return m.toString() + 'm'
 	// if (m === 0) return h.toString() + 'h'
-	return `${h.toString()}:${addZeroIfNeeded(m)}`
+	return `${addZeroIfNeeded(h)}:${addZeroIfNeeded(m)}`
 }
