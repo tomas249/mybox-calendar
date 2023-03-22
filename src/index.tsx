@@ -13,6 +13,9 @@ import AppV2 from './components/Event'
 import Task from './components/Task'
 import TaskV2 from './components/TaskV2'
 
+// Pages
+import { Calendar } from './pages/Calendar'
+
 const router = createBrowserRouter([
   {
     path: "/",
@@ -29,6 +32,10 @@ const router = createBrowserRouter([
   {
     path: "/task-v2",
     element: <TaskV2 />,
+  },
+  {
+    path: "/calendar",
+    element: <Calendar />,
   }
 ]);
 

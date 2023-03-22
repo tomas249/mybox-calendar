@@ -87,7 +87,7 @@ export function TasksPlanner() {
   useEffect(() => {
     const offset = calculateOffsets(sliderValue, time);
 
-    setTimeOffset(offset.timeOffset);
+    // setTimeOffset(offset.timeOffset);
     setTaskOffset(offset.taskOffset);
   }, [time, sliderValue])
 
@@ -104,6 +104,14 @@ export function TasksPlanner() {
       <div className="flex mb-5">
         <span>progress: {formatHours(sliderValue)}</span>
         <input className="text-black px-2 ml-5" type="text" value={sliderValue} onChange={e => setSliderValue(parseInt(e.target.value || '0'))} />
+      </div>
+      <div className="flex mb-5">
+        <button onClick={() => {
+          setInterval(() => {
+            // setTime(p => p + 1);
+            setSliderValue(p => p + 1);
+          }, 1000)
+        }}>Start</button>
       </div>
       <Container>
         <TimeListContainer offset={timeOffset}>
