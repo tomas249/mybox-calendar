@@ -1,20 +1,20 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import './index.css';
-import {
-  createBrowserRouter,
-  RouterProvider
-} from "react-router-dom";
+import React from "react";
+import "./index.css";
 
-import { register } from './serviceWorker';
+import ReactDOM from "react-dom/client";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
 
-import App from './App';
-import AppV2 from './components/Event'
-import Task from './components/Task'
-import TaskV2 from './components/TaskV2'
+import { register } from "./serviceWorker";
+
+import App from "./App";
+import AppV2 from "./components/Event";
+import Task from "./components/Task";
+import TaskV2 from "./components/TaskV2";
 
 // Pages
-import { Calendar } from './pages/Calendar'
+import { Calendar } from "./pages/Calendar";
+import { CalendarDnD } from "./pages/CalendarDnD";
+import { CategoriesEditor } from "./pages/CategoriesEditor";
 
 const router = createBrowserRouter([
   {
@@ -36,17 +36,25 @@ const router = createBrowserRouter([
   {
     path: "/calendar",
     element: <Calendar />,
-  }
+  },
+  {
+    path: "/calendar2",
+    element: <CalendarDnD />,
+  },
+  {
+    path: "/categories",
+    element: <CategoriesEditor />,
+  },
 ]);
 
 const root = ReactDOM.createRoot(
-	document.getElementById('root') as HTMLElement
+  document.getElementById("root") as HTMLElement
 );
 root.render(
-	<React.StrictMode>
-		<RouterProvider router={router} />
+  <React.StrictMode>
+    <RouterProvider router={router} />
     {/* <App/> */}
-	</React.StrictMode>
+  </React.StrictMode>
 );
 
-register()
+register();
