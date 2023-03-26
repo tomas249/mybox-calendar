@@ -144,7 +144,7 @@ function Calendar() {
         events: getDayEvents(day.date).map((id) => getEvent(id)),
       }));
     });
-  }, []);
+  }, [calendar, getDayEvents, getEvent]);
 
   return (
     <Container>
