@@ -13,7 +13,8 @@ import TaskV2 from "./components/TaskV2";
 
 // Pages
 import { Calendar } from "./pages/Calendar";
-import { CalendarDnD } from "./pages/CalendarDnD";
+// import { CalendarDnD } from "./pages/CalendarDnD";
+import { CalendarDnD } from "./pages/CalendarDnDV2";
 import { CategoriesEditor } from "./pages/CategoriesEditor";
 
 const router = createBrowserRouter([

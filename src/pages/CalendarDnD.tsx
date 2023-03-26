@@ -6,12 +6,14 @@ import {
 } from "../assets/events";
 import {
   createContext,
+  memo,
   useCallback,
   useContext,
   useEffect,
   useMemo,
   useState,
 } from "react";
+import { useImmer } from "use-immer";
 import dayjs from "dayjs";
 import { DndProvider, useDrag, useDrop } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
@@ -25,8 +27,8 @@ type EventsContextProps = {
 const EventsContext = createContext({} as EventsContextProps);
 
 function EventsProvider({ children }: { children: React.ReactNode }) {
-  const [events, setEvents] = useState(eventsData);
-  const [calendar, setCalendar] = useState(calendarById);
+  const [events, setEvents] = useImmer(eventsData);
+  const [calendar, setCalendar] = useImmer(calendarById);
 
   const getEvent = useCallback((id: string) => events[id], [events]);
 
@@ -37,19 +39,22 @@ function EventsProvider({ children }: { children: React.ReactNode }) {
 
   const changeEventDate = useCallback(
     (id: string, fromDate: string, toDate: string) => {
-      setCalendar((prevCalendar) => {
-        const newCalendar = { ...prevCalendar };
-
-        // Remove event from old date
-        newCalendar[fromDate] = newCalendar[fromDate].filter(
-          (eventId) => eventId !== id
-        );
-
-        // Add event to new date
-        newCalendar[toDate] = [...(newCalendar[toDate] || []), id];
-
-        return newCalendar;
-      });
+      // setCalendar((prevCalendar) => {
+      //   const newCalendar = { ...prevCalendar };
+      //   // Remove event from old date
+      //   newCalendar[fromDate] = newCalendar[fromDate].filter(
+      //     (eventId) => eventId !== id
+      //   );
+      //   // Add event to new date
+      //   newCalendar[toDate] = [...(newCalendar[toDate] || []), id];
+      //   return newCalendar;
+      // });
+      // setCalendar((draft) => {
+      //   // Remove event from old date
+      //   draft[fromDate] = draft[fromDate].filter((eventId) => eventId !== id);
+      //   // Add event to new date
+      //   (draft[toDate] ||= []).push(id);
+      // });
     },
     []
   );
@@ -110,14 +115,16 @@ function Calendar() {
 
 function DayHolder({ day }: { day: Day }) {
   const { getDayEvents, changeEventDate } = useEvents();
-  const [eventsForDay, setEvents] = useState(getDayEvents(day.date));
+  const [eventsForDay, setEvents] = useImmer(() => getDayEvents(day.date));
   // const eventsForDay = useMemo(
   //   () => getDayEvents(day.date),
   //   [getDayEvents, day.date]
   // );
 
-  function removeEvent(id: string) {
-    setEvents((prevEvents) => prevEvents.filter((eventId) => eventId !== id));
+  function removeEvent(index: number) {
+    setEvents((draft) => {
+      draft.splice(index, 1);
+    });
   }
 
   const [{ isOver, canDrop }, drop] = useDrop(
@@ -125,11 +132,13 @@ function DayHolder({ day }: { day: Day }) {
       accept: "event",
       drop: (item: any) => {
         if (item.fromDate !== day.date) {
-          setEvents((prevEvents) => [...prevEvents, item.id]);
+          setEvents((draft) => {
+            draft.push(item.id);
+          });
           // changeEventDate(item.id, item.fromDate, day.date);
         }
       },
-      canDrop(item, monitor) {
+      canDrop(item) {
         return item.fromDate !== day.date;
       },
       collect: (monitor) => ({
@@ -140,19 +149,17 @@ function DayHolder({ day }: { day: Day }) {
     []
   );
 
+  const backgroundColor = isOver && canDrop ? "lightgreen" : "white";
+
   return (
-    <DayStyled
-      ref={drop}
-      style={{
-        backgroundColor: isOver && canDrop ? "lightgreen" : "white",
-      }}
-    >
+    <DayStyled ref={drop} style={{ backgroundColor }}>
       <span>{day.day}</span>
       {eventsForDay.map((eventId, i) => (
         <EventHolder
           key={eventId}
           id={eventId}
           date={day.date}
+          index={i}
           removeEvent={removeEvent}
         />
       ))}
@@ -160,14 +167,16 @@ function DayHolder({ day }: { day: Day }) {
   );
 }
 
-function EventHolder({
+const EventHolder = memo(function EventHolder({
   id,
   date,
+  index,
   removeEvent,
 }: {
   id: string;
   date: string;
-  removeEvent: (id: string) => void;
+  index: number;
+  removeEvent: (index: number) => void;
 }) {
   const { getEvent } = useEvents();
 
@@ -175,12 +184,12 @@ function EventHolder({
 
   const [{ isDragging }, drag] = useDrag(() => ({
     type: "event",
-    item: { id, title, fromDate: date },
-    end(draggedItem, monitor) {
-      if (monitor.didDrop()) {
-        removeEvent(draggedItem.id);
-      }
-    },
+    item: { id, title, index, fromDate: date },
+    // end(draggedItem, monitor) {
+    //   if (monitor.didDrop()) {
+    //     removeEvent(index);
+    //   }
+    // },
     collect: (monitor) => ({
       isDragging: !!monitor.isDragging(),
       test: true,
@@ -197,7 +206,7 @@ function EventHolder({
       {title}
     </EventStyled>
   );
-}
+});
 
 const Container = styled.div`
   display: flex;
@@ -214,6 +223,11 @@ const EventStyled = styled.div`
   background-color: lightblue;
   border-radius: 4px;
   margin-bottom: 4px;
+
+  &:hover {
+    cursor: grab;
+    background-color: lightgreen;
+  }
 `;
 
 const DayStyled = styled.div`

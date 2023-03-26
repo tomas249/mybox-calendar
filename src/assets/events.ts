@@ -51,7 +51,7 @@ export type Event2 = {
 
 export const eventsById: Record<string, Event2> = {
   // Generate 10000 move events
-  ...Array.from({ length: 100 }, (_, i) => i).reduce((acc, i) => {
+  ...Array.from({ length: 60 }, (_, i) => i).reduce((acc, i) => {
     acc[`event${i}`] = {
       id: `event${i}`,
       title: `Event ${i}`,
